@@ -8,8 +8,26 @@
 #include <limits.h>
 #include <string.h>
 
+#include <time.h>
+
 char* modeToString(mode_t mode);
 mode_t stringToMode(const char* modeStr);
+void createDirectory(const char *path);
+void listDirectory(const char *path);
+void readFile(const char *path);
+void changeDescriptorPermissions(int fd, mode_t newPerms); //my func
+void testLseek(const char* path); //my func
+void deleteDirectory(const char *path);
+void createFile(const char *path);
+void deleteFile(const char *path);
+void createSymbolicLink(const char *path, const char *target);
+void readSymbolicLink(const char *path);
+void readLinkedFile(const char *path);
+void deleteSymbolicLink(const char *path);
+void createHardLink(const char *path, const char *target);
+void deleteHardLink(const char *path);
+void printFileInfo(const char *path);
+void changeFilePermissions(const char *path, mode_t newPerms);
 
 // Создание каталога //
 void createDirectory(const char *path)
@@ -31,9 +49,21 @@ void listDirectory(const char *path)
         exit(EXIT_FAILURE);
     }
 
+    //////////////
+    printf("Directory openned\n");
+    clock_t start, end;
+    //////////////
+
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
     {
+        start = clock();
+        end = clock();
+        while (end - start < 1e7 / 2) {
+            end = clock();
+        }
+        printf("5 second left!\n");
+        
         printf("%s\n", entry->d_name);
     }
 
@@ -42,6 +72,77 @@ void listDirectory(const char *path)
         perror("closedir failed");
         exit(EXIT_FAILURE);
     }
+}
+
+// Чтение из файла //
+void readFile(const char *path)
+{
+    int fd = open(path, O_RDONLY);
+    if (fd == -1)
+    {
+        perror("open failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    //////////////
+    // printf("File openned\n");
+    // printf("%d\n", fd);
+
+    // clock_t start, end;
+    // start = clock();
+    // end = clock();
+    // while (end - start < 1e7 / 2) {
+    //     end = clock();
+    // }
+    // printf("5 second left!\n");
+    //////////////
+
+    char buffer[PATH_MAX];
+    ssize_t n_read;
+    while ((n_read = read(fd, buffer, sizeof(buffer))) > 0)
+    {
+        if (write(STDOUT_FILENO, buffer, n_read) == -1)
+        {
+            perror("write failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (close(fd) == -1)
+    {
+        perror("close failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// изменение прав доступа у дескриптора //
+void changeDescriptorPermissions(int fd, mode_t newPerms) //my func
+{
+    if (fchmod(fd, newPerms) == -1)
+    {
+        perror("Error changing descriptor permissions");
+        exit(EXIT_FAILURE);
+    }
+}
+// изменение смещения у фуйла //
+void testLseek(const char* path) //my func
+{
+    int fd = open(path, O_RDONLY);
+    if (fd == -1)
+    {
+        perror("open failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("seeked: %ld\n", lseek(fd, 100, SEEK_CUR));
+
+    char buffer[64];
+    printf("readed: %ld\n", read(fd, buffer, 64));
+    printf("%s\n", buffer);
+
+    // printf("writed: %ld\n", write(fd, "hello", 5));
+    // readFile(path);
+    close(fd);
 }
 
 // Удаление каталога //
@@ -62,34 +163,6 @@ void createFile(const char *path)
     {
         perror("open failed");
         exit(EXIT_FAILURE);
-    }
-
-    if (close(fd) == -1)
-    {
-        perror("close failed");
-        exit(EXIT_FAILURE);
-    }
-}
-
-// Чтение из файла //
-void readFile(const char *path)
-{
-    int fd = open(path, O_RDONLY);
-    if (fd == -1)
-    {
-        perror("open failed");
-        exit(EXIT_FAILURE);
-    }
-
-    char buffer[PATH_MAX];
-    ssize_t n_read;
-    while ((n_read = read(fd, buffer, sizeof(buffer))) > 0)
-    {
-        if (write(STDOUT_FILENO, buffer, n_read) == -1)
-        {
-            perror("write failed");
-            exit(EXIT_FAILURE);
-        }
     }
 
     if (close(fd) == -1)
@@ -384,6 +457,21 @@ int main(int argc, char **argv)
         }
         mode_t mode = stringToMode(argv[3]);
         changeFilePermissions(argv[2], mode);
+    }
+    else if (strcmp(argv[1], "changeDescriptorPermissions") == 0) { //2 args
+        if (argc < 4) {
+            printf("This operation use 2 args!\n");
+            return 1;
+        }
+        mode_t mode = stringToMode(argv[3]);
+        changeDescriptorPermissions(atoi(argv[2]), mode);
+    }
+    else if (strcmp(argv[1], "testLseek") == 0) { //1 arg
+        if (argc < 3) {
+            printf("This operation use 1 arg!\n");
+            return 1;
+        }
+        testLseek(argv[2]);
     }
     else {
         printf("Operation(%s) not found!\n", argv[1]);

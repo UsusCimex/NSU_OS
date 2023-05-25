@@ -3,6 +3,8 @@
 #include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 void reverseText(char* text, int from, int to) {
     if (to <= from) return;
@@ -38,7 +40,7 @@ void createNewPath(char* path) {
         }
         tempPath[i] = path[i];
     }
-    mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
+    mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
 void fullPath(char* path, char* fileName, char* result) {
@@ -67,38 +69,70 @@ void createNewFiles(char* oldPath, char* newPath) {
                 }
                 newName[len] = '\0';
 
-                char fullNameBuffer[1024];
+                char fullNameBuffer[FILENAME_MAX];
                 fullPath(oldPath, oldName, fullNameBuffer);
 
-                FILE *oldFile = fopen(fullNameBuffer, "rb");
-                if (oldFile == NULL) {
-                    printf("|%s|\n", fullNameBuffer);
-                    perror("fopen failed");
-                    continue;
+                int fdOld = open(fullNameBuffer, O_RDONLY);
+                if (fdOld == -1) {
+                    perror("open input file");
+                    exit(1);
                 }
 
                 fullPath(newPath, newName, fullNameBuffer);
 
-                FILE *newFile = fopen(fullNameBuffer, "wb");
-                if (newFile == NULL) {
-                    printf("|%s|\n", fullNameBuffer);
-                    perror("fopen failed");
-                    fclose(oldFile);
-                    continue;
+                int fdNew = open(fullNameBuffer, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+                if (fdNew == -1) {
+                    perror("open output file");
+                    exit(1);
                 }
 
-                char buffer[1024];
-                char reversedBuffer[1024];
-                size_t readLen;
-                while ((readLen = fread(buffer, 1, sizeof(buffer), oldFile)) > 0) {
-                    for (int i = 0; i < readLen; ++i) {
-                        reversedBuffer[i] = buffer[readLen - i - 1];
+                struct stat st;
+                if (fstat(fdOld, &st) == -1) {
+                    perror("fstat");
+                    exit(1);
+                }
+                off_t file_size = st.st_size;
+
+                if (lseek(fdOld, 0, SEEK_END) == -1) {
+                    perror("lseek");
+                    exit(1);
+                }
+
+                off_t pos = file_size;
+                int block_size = 1024;
+                char* buffer = (char*)malloc(block_size * sizeof(char));
+                while (pos > 0) {
+                    pos -= block_size;
+                    if (pos < 0) {
+                        block_size += pos;
+                        pos = 0;
                     }
-                    fwrite(reversedBuffer, 1, readLen, newFile);
+                    if (lseek(fdOld, pos, SEEK_SET) == -1) {
+                        perror("lseek");
+                        exit(1);
+                    }
+                    ssize_t bytes_read = read(fdOld, buffer, block_size);
+                    if (bytes_read == -1) {
+                        perror("read");
+                        exit(1);
+                    }
+                    for (int i = 0; i < bytes_read; i++) {
+                        if (write(fdNew, &buffer[bytes_read - i - 1], 1) == -1) {
+                            perror("write");
+                            exit(1);
+                        }
+                    }
                 }
+                free(buffer);
 
-                fclose(oldFile);
-                fclose(newFile);
+                if (close(fdOld) == -1) {
+                    perror("close input file");
+                    exit(1);
+                }
+                if (close(fdNew) == -1) {
+                    perror("close output file");
+                    exit(1);
+                }
             }
         }
         closedir(dir);
@@ -110,8 +144,8 @@ void createNewFiles(char* oldPath, char* newPath) {
 void reverseDirectory(char* path) {
     char* newPath = (char*)malloc(strlen(path) * sizeof(char));
     getReversedPath(path, newPath);
-    createNewPath(newPath);
 
+    createNewPath(newPath);
     createNewFiles(path, newPath);
 }
 
@@ -119,7 +153,7 @@ int checkDir(char* path) {
     DIR* dir = opendir(path);
     if (dir == NULL) {
         printf("Error open directory: %s\n", path);
-        return 1;
+        exit(1);
     }
     closedir(dir);
     return 0;
@@ -128,7 +162,7 @@ int checkDir(char* path) {
 int main(int argc, char** argv) {
     if (argc != 2 || checkDir(argv[1])) {
         printf("Usage : ./lab3 <directory>\n");
-        return 1;
+        exit(1);
     }
     
     reverseDirectory(argv[1]);
