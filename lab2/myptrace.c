@@ -1,43 +1,46 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <sys/ptrace.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/reg.h>
+#include <sys/user.h>
 #include <sys/syscall.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-int main(int argc, char **argv) {
-    pid_t child;
-    long orig_eax;
-    int status;
-    int syscall_num;
-
+int main(int argc, char *argv[])
+{
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s program [args ...]\n", argv[0]);
-        return 1;
+        fprintf(stderr, "Usage: %s <prog> <args...>\n", argv[0]);
+        exit(1);
     }
 
-    child = fork();
+    pid_t child = fork();
+
     if (child == 0) {
-        /* Child process */
+        // Child proc
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         execvp(argv[1], argv + 1);
-        perror("execvp");
-        exit(1);
-    } else {
-        /* Parent process */
-        wait(&status);
-        while (WIFSTOPPED(status)) {
-            /* Get the system call number */
-            orig_eax = ptrace(PTRACE_PEEKUSER, child, sizeof(long) * ORIG_RAX, NULL);
-            syscall_num = (int)orig_eax;
+        perror("execl");
+        return 1;
+    }
+    else {
+        // Parent proc
+        int status;
+        struct user_regs_struct regs;
 
-            /* Print the system call number */
-            printf("syscall %d\n", syscall_num);
-
-            /* Continue execution */
-            ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+        while (1) {
             wait(&status);
+            if (WIFEXITED(status) || WIFSIGNALED(status)) {
+                break;
+            }
+
+            ptrace(PTRACE_GETREGS, child, NULL, &regs);
+
+            long syscall = regs.orig_rax;
+            printf("Syscall: %ld\n", syscall);
+
+            ptrace(PTRACE_SYSCALL, child, NULL, NULL);
         }
     }
 
