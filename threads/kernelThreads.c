@@ -7,12 +7,32 @@
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
+<<<<<<< HEAD
 #include <linux/futex.h>
 #include <syscall.h>
+=======
+>>>>>>> a45517e (add kernelThreads)
 
 #define PAGE_SIZE 4096
 #define STACK_SIZE (PAGE_SIZE * 5)
 
+<<<<<<< HEAD
+=======
+void* myFunc(void* arg) {
+    for (int i = 0; i < 5; ++i) {
+        printf("[%d]: hello world!\n", gettid());
+        usleep(10);
+    }
+    return NULL;
+}
+
+void* myFunc2(void* arg) {
+    int* newValue = (int*)malloc(sizeof(int));
+    *newValue = *((int*)arg) * 2;
+    return newValue;
+}
+
+>>>>>>> a45517e (add kernelThreads)
 typedef struct {
     int     id;
     void    *(*start_routine)(void *);
@@ -20,17 +40,25 @@ typedef struct {
     void    *return_value;
     void    *stack;
 
+<<<<<<< HEAD
     volatile int finished;
     volatile int joined;
     int futex;
+=======
+    int     finished;
+    int     joined;
+>>>>>>> a45517e (add kernelThreads)
 } mythread_struct;
 
 typedef mythread_struct* mythread_t;
 
+<<<<<<< HEAD
 int futex(int *uaddr, int futex_op, int val) {
     return syscall(SYS_futex, uaddr, futex_op, val,NULL, NULL, 0);
 }
 
+=======
+>>>>>>> a45517e (add kernelThreads)
 int thread_start(void *arg) {
     mythread_struct *mythread = (mythread_struct*)arg;
 
@@ -38,12 +66,17 @@ int thread_start(void *arg) {
     mythread->return_value = mythread->start_routine(mythread->arg);
     mythread->finished = 1;
 
+<<<<<<< HEAD
     mythread->futex = 1;
     futex(&mythread->futex, FUTEX_WAKE, 1);
 
     while (!mythread->joined) {
         // sched_yield();
         futex(&mythread->futex, FUTEX_WAIT, 0);
+=======
+    while (!mythread->joined) {
+        sched_yield();  // Передаем управление другим потокам (можно усыпить)
+>>>>>>> a45517e (add kernelThreads)
     }
 
     return 0;
@@ -66,6 +99,7 @@ int mythread_create(mythread_t *tid, void *(*start_routine)(void *), void *arg) 
     }
 
     mythread = (mythread_struct*)((char*)mythread_stack + STACK_SIZE - sizeof(mythread_struct));
+<<<<<<< HEAD
     mythread->id            = mythread_id;
     mythread->stack         = mythread_stack;
     mythread->start_routine = start_routine;
@@ -74,6 +108,15 @@ int mythread_create(mythread_t *tid, void *(*start_routine)(void *), void *arg) 
     mythread->finished      = 0;
     mythread->joined        = 0;
     mythread->futex         = 0;
+=======
+    mythread->id = mythread_id;
+    mythread->stack = mythread_stack;
+    mythread->start_routine = start_routine;
+    mythread->return_value = NULL;
+    mythread->arg = arg;
+    mythread->finished = 0;
+    mythread->joined = 0;
+>>>>>>> a45517e (add kernelThreads)
     
     int flags = CLONE_VM|CLONE_FILES|CLONE_SIGHAND|
                 CLONE_THREAD|CLONE_FS|SIGCHLD|
@@ -87,6 +130,10 @@ int mythread_create(mythread_t *tid, void *(*start_routine)(void *), void *arg) 
         mythread_id -= 1;
         return -1;
     }
+<<<<<<< HEAD
+=======
+    usleep(15);
+>>>>>>> a45517e (add kernelThreads)
     
     *tid = mythread;
     return 0;
@@ -96,8 +143,12 @@ int mythread_join(mythread_t tid, void** returnValue) {
     mythread_struct* mythread = tid;
 
     while (!mythread->finished) {
+<<<<<<< HEAD
         // sched_yield();
         futex(&mythread->futex, FUTEX_WAIT, 1);
+=======
+        sched_yield();  // Передаем управление другим потокам (можно усыпить)
+>>>>>>> a45517e (add kernelThreads)
     }
 
     mythread->joined = 1;
@@ -105,6 +156,7 @@ int mythread_join(mythread_t tid, void** returnValue) {
         *returnValue = mythread->return_value;
     }
 
+<<<<<<< HEAD
     mythread->futex = 0;
     futex(&mythread->futex, FUTEX_WAKE, 0);
 
@@ -127,6 +179,11 @@ void* myFunc2(void* arg) {
     return newValue;
 }
 
+=======
+    return 0;
+}
+
+>>>>>>> a45517e (add kernelThreads)
 int main() {
     mythread_t tid;
     int result = mythread_create(&tid, myFunc, NULL);
@@ -160,4 +217,8 @@ int main() {
     free(param);
     free(retValue);
     return 0;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a45517e (add kernelThreads)
