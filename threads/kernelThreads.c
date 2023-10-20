@@ -41,6 +41,7 @@ typedef struct {
     void    *stack;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     volatile int finished;
     volatile int joined;
     int futex;
@@ -48,6 +49,10 @@ typedef struct {
     int     finished;
     int     joined;
 >>>>>>> a45517e (add kernelThreads)
+=======
+    volatile int finished;
+    volatile int joined;
+>>>>>>> dc5e1b4 (fix mem leak and change type val to volatile)
 } mythread_struct;
 
 typedef mythread_struct* mythread_t;
@@ -151,6 +156,7 @@ int mythread_join(mythread_t tid, void** returnValue) {
 >>>>>>> a45517e (add kernelThreads)
     }
 
+    munmap(mythread->stack, STACK_SIZE);
     mythread->joined = 1;
     if (returnValue != NULL) {
         *returnValue = mythread->return_value;
