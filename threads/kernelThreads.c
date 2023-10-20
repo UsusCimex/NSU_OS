@@ -32,8 +32,8 @@ typedef struct {
     void    *return_value;
     void    *stack;
 
-    int     finished;
-    int     joined;
+    volatile int finished;
+    volatile int joined;
 } mythread_struct;
 
 typedef mythread_struct* mythread_t;
@@ -102,6 +102,7 @@ int mythread_join(mythread_t tid, void** returnValue) {
         sched_yield();  // Передаем управление другим потокам (можно усыпить)
     }
 
+    munmap(mythread->stack, STACK_SIZE);
     mythread->joined = 1;
     if (returnValue != NULL) {
         *returnValue = mythread->return_value;
