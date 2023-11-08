@@ -20,6 +20,7 @@
 typedef struct {
     void (*start_routine)(void *);
     void *arg;
+    int alive; // 0 if finished
 
     ucontext_t uctx;
 } uthread_struct;
@@ -53,6 +54,8 @@ void start_thread() {
         char *stack_to = ctx->uc_stack.ss_sp + ctx->uc_stack.ss_size;
         if (stack_from <= (char *)&i && (char *)&i <= stack_to) {
             uthreads[i]->start_routine(uthreads[i]->arg);
+            uthreads[i]->alive = 0;
+            scheduler();
         }
     }
 }
@@ -75,9 +78,16 @@ void uthread_create(uthread_t* ut, void (*thread_func)(void *), void *arg) {
     makecontext(&new_ut->uctx, start_thread, 0);
     new_ut->start_routine = thread_func;
     new_ut->arg = arg;
+    new_ut->alive = 1;
     uthreads[uthread_count] = new_ut;
     uthread_count++;
     *ut = new_ut;
+}
+
+void uthread_join(uthread_t ut) {
+    while(ut->alive) {
+        scheduler();
+    }
 }
 
 void uthread_scheduler(int sig, siginfo_t* si, void* u) {
@@ -88,7 +98,7 @@ void uthread_scheduler(int sig, siginfo_t* si, void* u) {
 void myFunc(void *arg) {
     int i;
     char* myarg = (char*)arg;
-    while(1) {
+    for (int i = 0; i < 5; ++i) {
         printf("%s[%d %d %d]\n", myarg, gettid(), getppid(), getpid());
         scheduler();
         sleep(2);
@@ -112,10 +122,16 @@ int main(int argc, char *argv[]) {
     uthread_create(&ut[1], myFunc, (void*)("thread2"));
     uthread_create(&ut[2], myFunc, (void*)("thread3"));
 
-    while (1) {
+    for (int i = 0; i < 3; ++i) {
         printf("Main thread[%d %d %d]\n", getpid(), getppid(), gettid());
         scheduler();
         sleep(2);
     }
+
+    for (int i = 0; i < 3; ++i) {
+        uthread_join(ut[i]);
+    }
+
+    printf("All thread have completed!\n");
     return 0;
 }
