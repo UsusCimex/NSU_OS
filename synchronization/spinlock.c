@@ -35,13 +35,11 @@ void spinlock_lock(spinlock_t *s) {
 }
 
 void spinlock_unlock(spinlock_t *s) {
-    if (atomic_flag_test_and_set(&s->lock)) {
-        atomic_flag_clear(&s->lock);
+    atomic_flag_clear(&s->lock);
 
-        int err = futex(&s->lock, FUTEX_WAKE, 1);
-        if (err == -1) {
-            printf("futex FUTEX_WAKE failed: %s\n", strerror(errno));
-            abort();
-        }
+    int err = futex(&s->lock, FUTEX_WAKE, 1);
+    if (err == -1) {
+        printf("futex FUTEX_WAKE failed: %s\n", strerror(errno));
+        abort();
     }
 }
