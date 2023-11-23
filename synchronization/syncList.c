@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 typedef struct _Node {
     char value[100];
@@ -187,9 +188,21 @@ void* monitor() {
     }    
 }
 
-void initializeList(Storage *storage, const char *values[], int num_values) {
-    for (int i = 0; i < num_values; i++) {
-        addNode(storage, values[i]);
+void generateRandomString(char *str, int length) {
+    char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    for (int i = 0; i < length - 1; i++) {
+        int key = rand() % (int)(sizeof(charset) - 1);
+        str[i] = charset[key];
+    }
+    str[length - 1] = '\0';
+}
+
+void generateList(Storage *storage, int numNodes) {
+    for (int i = 0; i < numNodes; i++) {
+        char randomString[100];
+        generateRandomString(randomString, rand() % 100);
+        addNode(storage, randomString);
     }
 }
 
@@ -197,10 +210,7 @@ int main() {
     Storage storage;
     storage.first = NULL;
 
-    // Добавление элементов в список...
-    const char *sampleValues[] = {"apple", "banana", "cherry", "date", "elderberry"};
-    int numValues = sizeof(sampleValues) / sizeof(sampleValues[0]);
-    initializeList(&storage, sampleValues, numValues);
+    generateList(&storage, 100);
 
     pthread_t inc_thread, dec_thread, eq_thread, swap_thread, monitor_thread;
     pthread_create(&inc_thread, NULL, countIncreasingLengthPairs, (void* )&storage);
