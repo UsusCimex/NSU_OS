@@ -14,17 +14,17 @@
 
 typedef struct {
     atomic_flag lock;
-} spinlock_t;
+} mutex_t;
 
 int futex(atomic_flag *uaddr, int futex_op, int val) {
     return syscall(SYS_futex, uaddr, futex_op, val, NULL, NULL, 0);
 }
 
-void spinlock_init(spinlock_t *s) {
+void mutex_init(mutex_t *s) {
     atomic_flag_clear(&s->lock);
 }
 
-void spinlock_lock(spinlock_t *s) {
+void mutex_lock(mutex_t *s) {
     while (atomic_flag_test_and_set(&s->lock)) {
         int err = futex(&s->lock, FUTEX_WAIT, 0);
         if (err == -1 && errno != EAGAIN) {
@@ -34,7 +34,7 @@ void spinlock_lock(spinlock_t *s) {
     }
 }
 
-void spinlock_unlock(spinlock_t *s) {
+void mutex_unlock(mutex_t *s) {
     atomic_flag_clear(&s->lock);
 
     int err = futex(&s->lock, FUTEX_WAKE, 1);
