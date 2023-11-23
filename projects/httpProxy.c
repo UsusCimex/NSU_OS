@@ -90,8 +90,6 @@ void* handle_connection(void* client_socket) {
     }
 
     if (host_line_start) {
-        printf("Found Host header line: %s\n", host_line_start);
-        
         char* host_line_end = strstr(host_line_start, "\r\n");
         if (!host_line_end) {
             host_line_end = strstr(host_line_start, "\n");
