@@ -26,20 +26,20 @@ void spinlock_init(spinlock_t *s) {
 
 void spinlock_lock(spinlock_t *s) {
     while (atomic_flag_test_and_set(&s->lock)) {
-        int err = futex(&s->lock, FUTEX_WAIT, 0);
-        if (err == -1 && errno != EAGAIN) {
-            printf("futex FUTEX_WAIT failed: %s\n", strerror(errno));
-            abort();
-        }
+        // int err = futex(&s->lock, FUTEX_WAIT, 0);
+        // if (err == -1 && errno != EAGAIN) {
+        //     printf("futex FUTEX_WAIT failed: %s\n", strerror(errno));
+        //     abort();
+        // }
     }
 }
 
 void spinlock_unlock(spinlock_t *s) {
     atomic_flag_clear(&s->lock);
 
-    int err = futex(&s->lock, FUTEX_WAKE, 1);
-    if (err == -1) {
-        printf("futex FUTEX_WAKE failed: %s\n", strerror(errno));
-        abort();
-    }
+    // int err = futex(&s->lock, FUTEX_WAKE, 1);
+    // if (err == -1) {
+    //     printf("futex FUTEX_WAKE failed: %s\n", strerror(errno));
+    //     abort();
+    // }
 }
