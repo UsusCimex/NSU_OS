@@ -19,8 +19,6 @@ int decreasing_length_count = 0;
 int equal_length_count = 0;
 int swap_count = 0;
 
-pthread_mutex_t global_mutex;
-
 void addNode(Storage* storage, const char* value) {
     Node* new_node = (Node* )malloc(sizeof(Node));
     strncpy(new_node->value, value, 100);
