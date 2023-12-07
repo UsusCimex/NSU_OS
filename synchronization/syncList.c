@@ -120,54 +120,33 @@ void* countEqualLengthPairs(void* arg) {
     return NULL;
 }
 
-void swapNodes(Storage* storage, Node* node1, Node* node2) {
-    if (node1 == NULL || node2 == NULL || node1 == node2) return;
-
-    // Находим предшествующие узлы для node1 и node2
-    Node *prev1 = NULL, *prev2 = NULL, *curr = storage->first;
-    while (curr != NULL && (prev1 == NULL || prev2 == NULL)) {
-        if (curr->next == node1) prev1 = curr;
-        if (curr->next == node2) prev2 = curr;
-        curr = curr->next;
-    }
-
-    // Обновляем предшествующие узлы
-    if (prev1 != NULL) prev1->next = node2;
-    if (prev2 != NULL) prev2->next = node1;
-
-    // Обмениваем следующие узлы
-    Node* temp = node1->next;
-    node1->next = node2->next;
-    node2->next = temp;
-
-    // Обновляем первый элемент списка, если необходимо
-    if (storage->first == node1) storage->first = node2;
-    else if (storage->first == node2) storage->first = node1;
-}
-
 // Функция потока для перестановки узлов списка
 void* swapNodesInList(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
-        Node* current = storage->first;
+        Node* prev = storage->first;
+        pthread_mutex_lock(&prev->sync);
+        Node* current = NULL;
         Node* next = NULL;
 
-        while (current != NULL) {
-            pthread_mutex_lock(&global_mutex); // To avoid deadlock
+        while (prev->next != NULL) {
+            current = prev->next;
             pthread_mutex_lock(&current->sync);
             next = current->next;
             if (next != NULL) {
                 pthread_mutex_lock(&next->sync);
-                if (next != NULL && rand() % 100 < 25) { // 25% to swap
-                    swapNodes(storage, current, next);
-                    swap_count++;
+                if (next != NULL && rand() % 100 < 50) { // 50% to swap
+                    prev->next = next;
+                    current->next = next->next;
+                    next->next = current;
                 }
+                swap_count++;
                 pthread_mutex_unlock(&next->sync);
             }
-            pthread_mutex_unlock(&current->sync);
-            current = next;
-            pthread_mutex_unlock(&global_mutex);
+            pthread_mutex_unlock(&prev->sync);
+            prev = current;
         }
+        pthread_mutex_unlock(&prev->sync);
     }
     return NULL;
 }
