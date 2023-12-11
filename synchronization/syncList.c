@@ -50,46 +50,42 @@ void deleteNode(Storage* storage, Node* node) {
 void* countIncreasingLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->first);
         Node* current = storage->first;
         Node* next = NULL;
 
-        while (current != NULL) {
-            pthread_mutex_lock(&current->sync);
+        while (current->next != NULL) {
+            pthread_mutex_lock(&current->next->sync);
             next = current->next;
-            if (next != NULL) {
-                pthread_mutex_lock(&next->sync);
-                if (strlen(current->value) < strlen(next->value)) {
-                    increasing_length_count++;
-                }
-                pthread_mutex_unlock(&next->sync);
+            if (strlen(current->value) < strlen(next->value)) {
+                increasing_length_count++;
             }
             pthread_mutex_unlock(&current->sync);
             current = next;
         }
+        pthread_mutex_unlock(&current->sync);
     }
     return NULL;
 }
 
 // Функция потока для подсчета пар строк, идущих по убыванию длины
 void* countDecreasingLengthPairs(void* arg) {
-    Storage* storage = (Storage* )arg;
+    Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->first);
         Node* current = storage->first;
         Node* next = NULL;
 
-        while (current != NULL) {
-            pthread_mutex_lock(&current->sync);
+        while (current->next != NULL) {
+            pthread_mutex_lock(&current->next->sync);
             next = current->next;
-            if (next != NULL) {
-                pthread_mutex_lock(&next->sync);
-                if (strlen(current->value) > strlen(next->value)) {
-                    decreasing_length_count++;
-                }
-                pthread_mutex_unlock(&next->sync);
+            if (strlen(current->value) > strlen(next->value)) {
+                decreasing_length_count++;
             }
             pthread_mutex_unlock(&current->sync);
             current = next;
         }
+        pthread_mutex_unlock(&current->sync);
     }
     return NULL;
 }
@@ -98,22 +94,20 @@ void* countDecreasingLengthPairs(void* arg) {
 void* countEqualLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->first);
         Node* current = storage->first;
         Node* next = NULL;
 
-        while (current != NULL) {
-            pthread_mutex_lock(&current->sync);
+        while (current->next != NULL) {
+            pthread_mutex_lock(&current->next->sync);
             next = current->next;
-            if (next != NULL) {
-                pthread_mutex_lock(&next->sync);
-                if (strlen(current->value) == strlen(next->value)) {
-                    equal_length_count++;
-                }
-                pthread_mutex_unlock(&next->sync);
+            if (strlen(current->value) == strlen(next->value)) {
+                equal_length_count++;
             }
             pthread_mutex_unlock(&current->sync);
             current = next;
         }
+        pthread_mutex_unlock(&current->sync);
     }
     return NULL;
 }
@@ -122,17 +116,17 @@ void* countEqualLengthPairs(void* arg) {
 void* swapNodesInList(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->first->sync);
         Node* prev = storage->first;
-        pthread_mutex_lock(&prev->sync);
         Node* current = NULL;
         Node* next = NULL;
 
         while (prev->next != NULL) {
+            pthread_mutex_lock(&prev->next->sync);
             current = prev->next;
-            pthread_mutex_lock(&current->sync);
-            next = current->next;
-            if (next != NULL) {
-                pthread_mutex_lock(&next->sync);
+            if (current->next != NULL) {
+                pthread_mutex_lock(&current->next->sync);
+                next = current->next;
                 if (next != NULL && rand() % 100 < 50) { // 50% to swap
                     prev->next = next;
                     current->next = next->next;
