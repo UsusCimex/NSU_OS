@@ -20,10 +20,7 @@
 typedef struct {
     void (*start_routine)(void *);
     void *arg;
-<<<<<<< HEAD
     int alive; // 0 if finished
-=======
->>>>>>> c71ab4f (add userThreads)
 
     ucontext_t uctx;
 } uthread_struct;
@@ -57,11 +54,8 @@ void start_thread() {
         char *stack_to = ctx->uc_stack.ss_sp + ctx->uc_stack.ss_size;
         if (stack_from <= (char *)&i && (char *)&i <= stack_to) {
             uthreads[i]->start_routine(uthreads[i]->arg);
-<<<<<<< HEAD
             uthreads[i]->alive = 0;
             scheduler();
-=======
->>>>>>> c71ab4f (add userThreads)
         }
     }
 }
@@ -84,24 +78,18 @@ void uthread_create(uthread_t* ut, void (*thread_func)(void *), void *arg) {
     makecontext(&new_ut->uctx, start_thread, 0);
     new_ut->start_routine = thread_func;
     new_ut->arg = arg;
-<<<<<<< HEAD
     new_ut->alive = 1;
-=======
->>>>>>> c71ab4f (add userThreads)
     uthreads[uthread_count] = new_ut;
     uthread_count++;
     *ut = new_ut;
 }
 
-<<<<<<< HEAD
 void uthread_join(uthread_t ut) {
     while(ut->alive) {
         scheduler();
     }
 }
 
-=======
->>>>>>> c71ab4f (add userThreads)
 void uthread_scheduler(int sig, siginfo_t* si, void* u) {
     printf("uthread_scheduler called\n");
     scheduler();
@@ -110,11 +98,7 @@ void uthread_scheduler(int sig, siginfo_t* si, void* u) {
 void myFunc(void *arg) {
     int i;
     char* myarg = (char*)arg;
-<<<<<<< HEAD
     for (int i = 0; i < 5; ++i) {
-=======
-    while(1) {
->>>>>>> c71ab4f (add userThreads)
         printf("%s[%d %d %d]\n", myarg, gettid(), getppid(), getpid());
         scheduler();
         sleep(2);
@@ -138,23 +122,16 @@ int main(int argc, char *argv[]) {
     uthread_create(&ut[1], myFunc, (void*)("thread2"));
     uthread_create(&ut[2], myFunc, (void*)("thread3"));
 
-<<<<<<< HEAD
     for (int i = 0; i < 3; ++i) {
-=======
-    while (1) {
->>>>>>> c71ab4f (add userThreads)
         printf("Main thread[%d %d %d]\n", getpid(), getppid(), gettid());
         scheduler();
         sleep(2);
     }
-<<<<<<< HEAD
 
     for (int i = 0; i < 3; ++i) {
         uthread_join(ut[i]);
     }
 
     printf("All thread have completed!\n");
-=======
->>>>>>> c71ab4f (add userThreads)
     return 0;
 }
