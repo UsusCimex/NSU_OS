@@ -75,12 +75,11 @@ void* handle_connection(void* client_socket) {
     int target_sock, read_bytes;
 
     // Чтение запроса от клиента
-    read_bytes = recv(client_sock, buffer, BUFFER_SIZE - 1, 0);
+    read_bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
     if (read_bytes <= 0) {
         close(client_sock);
         return NULL;
     }
-    buffer[read_bytes] = '\0'; // Добавляем нуль-терминатор
 
     // Извлечение имени хоста из запроса
     char host[_SC_HOST_NAME_MAX + 1] = {0};
@@ -118,7 +117,7 @@ void* handle_connection(void* client_socket) {
     }
 
     // Передача запроса на целевой сервер
-    send(target_sock, buffer, strlen(buffer), 0);
+    send(target_sock, buffer, read_bytes, 0);
 
     // Передача ответа обратно клиенту
     while ((read_bytes = recv(target_sock, buffer, BUFFER_SIZE, 0)) > 0) {
