@@ -73,19 +73,31 @@ void* handle_connection(void* client_socket) {
     int client_sock = *(int*)client_socket;
     char buffer[BUFFER_SIZE];
     int target_sock, read_bytes;
+    int data_size = 0;
+    char* data = NULL;
 
     // Чтение запроса от клиента
-    read_bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
-    if (read_bytes <= 0) {
-        close(client_sock);
-        return NULL;
+    while (1) {
+        read_bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
+        if (read_bytes <= 0) {
+            break;
+        }
+
+        data = realloc(data, data_size + read_bytes);
+        memcpy(data + data_size, buffer, read_bytes);
+        data_size += read_bytes;
+
+        // Проверка на наличие CRLF
+        if (strstr(data, "\r\n\r\n") != NULL) {
+            break;
+        }
     }
 
     // Извлечение имени хоста из запроса
     char host[_SC_HOST_NAME_MAX + 1] = {0};
-    char* host_line_start = strstr(buffer, "Host: ");
+    char* host_line_start = strstr(data, "Host: ");
     if (!host_line_start) {
-        host_line_start = strstr(buffer, "host: "); // Попытка найти заголовок в другом регистре
+        host_line_start = strstr(data, "host: "); // Попытка найти заголовок в другом регистре
     }
 
     if (host_line_start) {
@@ -117,7 +129,7 @@ void* handle_connection(void* client_socket) {
     }
 
     // Передача запроса на целевой сервер
-    send(target_sock, buffer, read_bytes, 0);
+    send(target_sock, data, data_size, 0);
 
     // Передача ответа обратно клиенту
     while ((read_bytes = recv(target_sock, buffer, BUFFER_SIZE, 0)) > 0) {
