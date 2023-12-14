@@ -50,7 +50,7 @@ void deleteNode(Storage* storage, Node* node) {
 void* countIncreasingLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
-        pthread_mutex_lock(&storage->first);
+        pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
         Node* next = NULL;
 
@@ -72,7 +72,7 @@ void* countIncreasingLengthPairs(void* arg) {
 void* countDecreasingLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
-        pthread_mutex_lock(&storage->first);
+        pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
         Node* next = NULL;
 
@@ -94,7 +94,7 @@ void* countDecreasingLengthPairs(void* arg) {
 void* countEqualLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
-        pthread_mutex_lock(&storage->first);
+        pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
         Node* next = NULL;
 
