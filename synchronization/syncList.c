@@ -12,6 +12,7 @@ typedef struct _Node {
 
 typedef struct _Storage {
     Node* first;
+    pthread_mutex_t firstNodeMutex;
 } Storage;
 
 int increasing_length_count = 0;
@@ -50,8 +51,10 @@ void deleteNode(Storage* storage, Node* node) {
 void* countIncreasingLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->firstNodeMutex);
         pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
+        pthread_mutex_unlock(&storage->firstNodeMutex);
         Node* next = NULL;
 
         while (current->next != NULL) {
@@ -72,8 +75,10 @@ void* countIncreasingLengthPairs(void* arg) {
 void* countDecreasingLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->firstNodeMutex);
         pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
+        pthread_mutex_unlock(&storage->firstNodeMutex);
         Node* next = NULL;
 
         while (current->next != NULL) {
@@ -94,8 +99,10 @@ void* countDecreasingLengthPairs(void* arg) {
 void* countEqualLengthPairs(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->firstNodeMutex);
         pthread_mutex_lock(&storage->first->sync);
         Node* current = storage->first;
+        pthread_mutex_unlock(&storage->firstNodeMutex);
         Node* next = NULL;
 
         while (current->next != NULL) {
@@ -116,8 +123,10 @@ void* countEqualLengthPairs(void* arg) {
 void* swapNodesInList(void* arg) {
     Storage* storage = (Storage*)arg;
     while (1) {
+        pthread_mutex_lock(&storage->firstNodeMutex);
         pthread_mutex_lock(&storage->first->sync);
         Node* prev = storage->first;
+        pthread_mutex_unlock(&storage->firstNodeMutex);
         Node* current = NULL;
         Node* next = NULL;
 
