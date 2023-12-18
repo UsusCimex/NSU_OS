@@ -10,7 +10,6 @@
 
 #define PORT 80
 #define BUFFER_SIZE 4096
-#define MAX_THREADS 10
 
 void* handle_connection(void* client_socket);
 int connect_to_target(char* host, int port);
@@ -52,9 +51,6 @@ int main(int argc, char* argv[]) {
 
     printf("HTTP Proxy Server Listening on port %d\n", PORT);
 
-    pthread_t threads[MAX_THREADS] = {0};
-    int current_thread = 0;
-
     while (1) {
         // Принятие соединения от клиента
         if ((client_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addr_len)) < 0) {
@@ -62,22 +58,12 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        if (threads[current_thread] != 0) {
-            pthread_join(threads[current_thread], NULL);
-        }
-
-        if (pthread_create(&threads[current_thread], NULL, handle_connection, (void*)&client_socket) != 0) {
+        pthread_t thread;
+        if (pthread_create(&thread, NULL, handle_connection, (void*)&client_socket) != 0) {
             perror("pthread_create");
             continue;
         }
-
-        current_thread = (current_thread + 1) % MAX_THREADS;
-    }
-
-    for (int i = 0; i < MAX_THREADS; i++) {
-        if (threads[i] != 0) {
-            pthread_join(threads[i], NULL);
-        }
+        pthread_detach(thread);
     }
 
     return 0;
