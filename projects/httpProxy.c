@@ -130,6 +130,7 @@ void* handle_connection(void* client_socket) {
 
     // Передача запроса на целевой сервер
     send(target_sock, data, data_size, 0);
+    free(data);
 
     // Передача ответа обратно клиенту
     while ((read_bytes = recv(target_sock, buffer, BUFFER_SIZE, 0)) > 0) {
